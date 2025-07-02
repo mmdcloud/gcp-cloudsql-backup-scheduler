@@ -104,13 +104,29 @@ module "backup_function_app_service_account" {
 module "backup_function_code" {
   source   = "./modules/gcs"
   location = var.region
-  name     = "backup-function-code"
+  name     = "backup-scheduler-function-code"
   cors     = []
   contents = [
     {
       name        = "backup_function_code.zip"
       source_path = "${path.module}/files/backup_function_code.zip"
       content     = ""
+    }
+  ]
+  force_destroy               = true
+  uniform_bucket_level_access = true
+}
+
+module "backup_bucket" {
+  source   = "./modules/gcs"
+  location = var.region
+  name     = "bckp-bucket-${data.google_project.project.project_id}"
+  cors     = []
+  contents = [
+    {
+      name        = "cloudsql-backups"
+      content     = " "
+      source_path = ""
     }
   ]
   force_destroy               = true
@@ -124,6 +140,16 @@ module "pubsub" {
   message_retention_duration = "86600s"
 }
 
+# Scheduler 
+module "scheduler" {
+  source            = "./modules/scheduler"
+  name              = "cloudsql-backup-scheduler-job"
+  description       = "cloudsql-backup-scheduler-job"
+  schedule          = "20 07 * * *"
+  pubsub_topic_name = module.pubsub.topic_id
+  pubsub_data       = base64encode("Mohit !")
+}
+
 # Backup function
 module "backup_function" {
   source                              = "./modules/cloud-run-function"
@@ -134,7 +160,12 @@ module "backup_function" {
   location                            = var.region
   storage_source_bucket               = module.backup_function_code.bucket_name
   storage_source_bucket_object        = module.backup_function_code.object_name[0].name
-  build_env_variables                 = {}
+  build_env_variables                 = {
+    CLOUD_SQL_INSTANCE_NAME = module.db.db_name
+    BUCKET_NAME             = module.backup_bucket.bucket_name
+    BACKUP_DIR              = "cloudsql-backups"
+    DATABASE_NAME           = module.db.db_name 
+  }
   all_traffic_on_latest_revision      = true
   vpc_connector                       = module.vpc_connectors.vpc_connectors[0].id
   vpc_connector_egress_settings       = "ALL_TRAFFIC"
