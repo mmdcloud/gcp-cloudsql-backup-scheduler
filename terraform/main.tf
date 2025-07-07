@@ -147,7 +147,7 @@ module "scheduler" {
   source            = "./modules/scheduler"
   name              = "cloudsql-backup-scheduler-job"
   description       = "cloudsql-backup-scheduler-job"
-  schedule          = "20 11 * * *"
+  schedule          = "30 11 * * *"
   pubsub_topic_name = module.pubsub.topic_id
   pubsub_data       = base64encode("Mohit !")
 }
