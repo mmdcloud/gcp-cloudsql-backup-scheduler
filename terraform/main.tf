@@ -97,7 +97,9 @@ module "backup_function_app_service_account" {
     "roles/cloudsql.client",
     "roles/artifactregistry.reader",
     "roles/secretmanager.admin",
-    "roles/pubsub.publisher"
+    "roles/pubsub.publisher",
+    "roles/cloudsql.admin",
+    "roles/storage.admin",
   ]
 }
 
@@ -145,7 +147,7 @@ module "scheduler" {
   source            = "./modules/scheduler"
   name              = "cloudsql-backup-scheduler-job"
   description       = "cloudsql-backup-scheduler-job"
-  schedule          = "20 07 * * *"
+  schedule          = "20 11 * * *"
   pubsub_topic_name = module.pubsub.topic_id
   pubsub_data       = base64encode("Mohit !")
 }

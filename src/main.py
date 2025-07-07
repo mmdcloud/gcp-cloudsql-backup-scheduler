@@ -16,7 +16,7 @@ def handler(event, context):
     # Authenticate
     credentials = GoogleCredentials.get_application_default()
     service = discovery.build('sqladmin', 'v1beta4', credentials=credentials)
-    
+    print(f"Using service account: {credentials}")
     # Create export request body
     timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     backup_file = f'{INSTANCE_NAME}-{timestamp}.sql.gz'
