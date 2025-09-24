@@ -6,38 +6,15 @@ data "vault_generic_secret" "sql" {
   path = "secret/sql"
 }
 
-# VPC Creation
+# VPC
 module "vpc" {
-  source                  = "./modules/network/vpc"
-  auto_create_subnetworks = false
-  vpc_name                = "vpc"
-  routing_mode            = "REGIONAL"
-}
-
-# Subnets Creation
-module "public_subnets" {
-  source                   = "./modules/network/subnet"
-  name                     = "public-subnet"
-  subnets                  = var.public_subnets
-  vpc_id                   = module.vpc.vpc_id
-  private_ip_google_access = false
-  location                 = var.region
-}
-
-module "private_subnets" {
-  source                   = "./modules/network/subnet"
-  name                     = "private-subnet"
-  subnets                  = var.private_subnets
-  vpc_id                   = module.vpc.vpc_id
-  private_ip_google_access = true
-  location                 = var.region
-}
-
-# Firewall Creation
-module "firewall" {
-  source        = "./modules/network/firewall"
+  source                          = "./modules/vpc"
+  vpc_name                        = "vpc"
+  delete_default_routes_on_create = false
+  auto_create_subnetworks         = false
+  routing_mode                    = "REGIONAL"
+  subnets = []
   firewall_data = []
-  vpc_id        = module.vpc.vpc_id
 }
 
 # Serverless VPC Creation
@@ -147,7 +124,7 @@ module "scheduler" {
   source            = "./modules/scheduler"
   name              = "cloudsql-backup-scheduler-job"
   description       = "cloudsql-backup-scheduler-job"
-  schedule          = "30 11 * * *"
+  schedule          = "25 4 * * *"
   pubsub_topic_name = module.pubsub.topic_id
   pubsub_data       = base64encode("Mohit !")
 }
