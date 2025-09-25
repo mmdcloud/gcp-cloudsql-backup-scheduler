@@ -1,5 +1,5 @@
-resource "google_compute_global_address" "carshub_sql_private_ip_address" {
-  name          = "carshub-sql-private-ip-address"
+resource "google_compute_global_address" "sql_private_ip_address" {
+  name          = "sql-private-ip-address"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16
@@ -11,7 +11,7 @@ resource "google_service_networking_connection" "private_vpc_connection" {
   service                 = "servicenetworking.googleapis.com"
   update_on_creation_fail = true
   deletion_policy         = "ABANDON"
-  reserved_peering_ranges = [google_compute_global_address.carshub_sql_private_ip_address.name]
+  reserved_peering_ranges = [google_compute_global_address.sql_private_ip_address.name]
 }
 
 resource "google_sql_database_instance" "db_instance" {

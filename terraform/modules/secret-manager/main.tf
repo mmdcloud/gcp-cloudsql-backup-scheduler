@@ -12,7 +12,7 @@ resource "google_secret_manager_secret_version" "secret_version" {
   secret_data = var.secret_data
 }
 
-resource "google_secret_manager_secret_iam_member" "carshub_secret_access" {
+resource "google_secret_manager_secret_iam_member" "secret_access_member" {
   secret_id  = google_secret_manager_secret.secret.id
   role       = "roles/secretmanager.secretAccessor"
   member     = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"

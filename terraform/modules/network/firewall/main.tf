@@ -1,4 +1,4 @@
-resource "google_compute_firewall" "carshub_firewall" {
+resource "google_compute_firewall" "firewall" {
   count         = length(var.firewall_data)
   name          = element(var.firewall_data[*].firewall_name, count.index)
   direction     = element(var.firewall_data[*].firewall_direction, count.index)

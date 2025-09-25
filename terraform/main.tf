@@ -1,20 +1,27 @@
-# Getting project information
+
+# -------------------------------------------------------------------------------
+# Getting Project Information
+# -------------------------------------------------------------------------------
 data "google_project" "project" {}
 
-# Registering vault provider
+# -------------------------------------------------------------------------------
+# Registering Vault Provider
+# -------------------------------------------------------------------------------
 data "vault_generic_secret" "sql" {
   path = "secret/sql"
 }
 
-# VPC
+# -------------------------------------------------------------------------------
+# VPC Configuration
+# -------------------------------------------------------------------------------
 module "vpc" {
   source                          = "./modules/vpc"
   vpc_name                        = "vpc"
   delete_default_routes_on_create = false
   auto_create_subnetworks         = false
   routing_mode                    = "REGIONAL"
-  subnets = []
-  firewall_data = []
+  subnets                         = []
+  firewall_data                   = []
 }
 
 # Serverless VPC Creation
@@ -32,14 +39,19 @@ module "vpc_connectors" {
   ]
 }
 
-# Secret Manager
+# -------------------------------------------------------------------------------
+# Secrets Manager Configuration
+# -------------------------------------------------------------------------------
 module "sql_password_secret" {
   source      = "./modules/secret-manager"
   secret_data = tostring(data.vault_generic_secret.sql.data["password"])
   secret_id   = "db_password_secret"
 }
 
-# Cloud SQL
+# -------------------------------------------------------------------------------
+# Cloud SQL Configuration
+# -------------------------------------------------------------------------------
+
 module "db" {
   source                      = "./modules/cloud-sql"
   name                        = "db-instance"
@@ -60,25 +72,9 @@ module "db" {
   database_flags              = []
 }
 
-# Service Account
-module "backup_function_app_service_account" {
-  source        = "./modules/service-account"
-  account_id    = "backup-function-sa"
-  display_name  = "backup-function sa"
-  project_id    = data.google_project.project.project_id
-  member_prefix = "serviceAccount"
-  permissions = [
-    "roles/iam.serviceAccountUser",
-    "roles/run.invoker",
-    "roles/eventarc.eventReceiver",
-    "roles/cloudsql.client",
-    "roles/artifactregistry.reader",
-    "roles/secretmanager.admin",
-    "roles/pubsub.publisher",
-    "roles/cloudsql.admin",
-    "roles/storage.admin",
-  ]
-}
+# -------------------------------------------------------------------------------
+# Cloud Storage Configuration
+# -------------------------------------------------------------------------------
 
 module "backup_function_code" {
   source   = "./modules/gcs"
@@ -112,14 +108,18 @@ module "backup_bucket" {
   uniform_bucket_level_access = true
 }
 
-# PubSub
+# -------------------------------------------------------------------------------
+# Pub/Sub Configuration
+# -------------------------------------------------------------------------------
 module "pubsub" {
   source                     = "./modules/pubsub"
   name                       = "backup-scheduler-topic"
   message_retention_duration = "86600s"
 }
 
-# Scheduler 
+# -------------------------------------------------------------------------------
+# Scheduler Configuration
+# -------------------------------------------------------------------------------
 module "scheduler" {
   source            = "./modules/scheduler"
   name              = "cloudsql-backup-scheduler-job"
@@ -129,21 +129,44 @@ module "scheduler" {
   pubsub_data       = base64encode("Mohit !")
 }
 
+# -------------------------------------------------------------------------------
 # Backup function
+# -------------------------------------------------------------------------------
+
+# Service Account
+module "backup_function_app_service_account" {
+  source        = "./modules/service-account"
+  account_id    = "backup-function-sa"
+  display_name  = "backup-function sa"
+  project_id    = data.google_project.project.project_id
+  member_prefix = "serviceAccount"
+  permissions = [
+    "roles/iam.serviceAccountUser",
+    "roles/run.invoker",
+    "roles/eventarc.eventReceiver",
+    "roles/cloudsql.client",
+    "roles/artifactregistry.reader",
+    "roles/secretmanager.admin",
+    "roles/pubsub.publisher",
+    "roles/cloudsql.admin",
+    "roles/storage.admin",
+  ]
+}
+
 module "backup_function" {
-  source                              = "./modules/cloud-run-function"
-  function_name                       = "backup-function"
-  function_description                = "A function to update media details in SQL database after the upload trigger"
-  handler                             = "handler"
-  runtime                             = "python312"
-  location                            = var.region
-  storage_source_bucket               = module.backup_function_code.bucket_name
-  storage_source_bucket_object        = module.backup_function_code.object_name[0].name
-  build_env_variables                 = {
+  source                       = "./modules/cloud-run-function"
+  function_name                = "backup-function"
+  function_description         = "A function to update media details in SQL database after the upload trigger"
+  handler                      = "handler"
+  runtime                      = "python312"
+  location                     = var.region
+  storage_source_bucket        = module.backup_function_code.bucket_name
+  storage_source_bucket_object = module.backup_function_code.object_name[0].name
+  build_env_variables = {
     CLOUD_SQL_INSTANCE_NAME = module.db.db_name
     BUCKET_NAME             = module.backup_bucket.bucket_name
     BACKUP_DIR              = "cloudsql-backups"
-    DATABASE_NAME           = module.db.db_name 
+    DATABASE_NAME           = module.db.db_name
   }
   all_traffic_on_latest_revision      = true
   vpc_connector                       = module.vpc_connectors.vpc_connectors[0].id

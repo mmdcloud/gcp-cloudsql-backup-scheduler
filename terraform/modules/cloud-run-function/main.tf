@@ -1,4 +1,4 @@
-resource "google_cloudfunctions2_function" "carshub_media_function" {
+resource "google_cloudfunctions2_function" "function" {
   name        = var.function_name
   location    = var.location
   description = var.function_description
