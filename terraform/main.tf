@@ -1,4 +1,3 @@
-
 # -------------------------------------------------------------------------------
 # Getting Project Information
 # -------------------------------------------------------------------------------
@@ -24,7 +23,7 @@ module "vpc" {
   firewall_data                   = []
 }
 
-# Serverless VPC Creation
+# Serverless VPC Connectors
 module "vpc_connectors" {
   source   = "./modules/network/vpc-connector"
   vpc_name = module.vpc.vpc_name
@@ -51,7 +50,6 @@ module "sql_password_secret" {
 # -------------------------------------------------------------------------------
 # Cloud SQL Configuration
 # -------------------------------------------------------------------------------
-
 module "db" {
   source                      = "./modules/cloud-sql"
   name                        = "db-instance"
@@ -75,7 +73,6 @@ module "db" {
 # -------------------------------------------------------------------------------
 # Cloud Storage Configuration
 # -------------------------------------------------------------------------------
-
 module "backup_function_code" {
   source   = "./modules/gcs"
   location = var.region
@@ -132,8 +129,6 @@ module "scheduler" {
 # -------------------------------------------------------------------------------
 # Backup function
 # -------------------------------------------------------------------------------
-
-# Service Account
 module "backup_function_app_service_account" {
   source        = "./modules/service-account"
   account_id    = "backup-function-sa"
